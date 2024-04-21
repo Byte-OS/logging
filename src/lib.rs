@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-use arch::{console_getchar, console_putchar};
+use arch::debug::DebugConsole;
 use core::fmt::{self, Write};
 use devices::MAIN_UART;
 use log::{self, info, Level, LevelFilter, Log, Metadata, Record};
@@ -19,9 +19,6 @@ impl Log for Logger {
             return;
         }
 
-        let file = record.file();
-        let line = record.line();
-
         let color_code = match record.level() {
             Level::Error => 31u8, // Red
             Level::Warn => 93,    // BrightYellow
@@ -29,15 +26,32 @@ impl Log for Logger {
             Level::Debug => 32,   // Green
             Level::Trace => 90,   // BrightBlack
         };
+        #[cfg(feature = "with_line")]
+        {
+            let file = record.file();
+            let line = record.line();
+            write!(
+                Logger,
+                "\u{1B}[{}m\
+                [{}] {}:{} {}\
+                \u{1B}[0m\n",
+                color_code,
+                record.level(),
+                file.unwrap(),
+                line.unwrap(),
+                record.args()
+            )
+            .expect("can't write color string in logging module.");
+        }
+
+        #[cfg(not(feature = "with_line"))]
         write!(
             Logger,
             "\u{1B}[{}m\
-            [{}] {}:{} {}\
+            [{}] {}\
             \u{1B}[0m\n",
             color_code,
             record.level(),
-            file.unwrap(),
-            line.unwrap(),
             record.args()
         )
         .expect("can't write color string in logging module.");
@@ -68,6 +82,7 @@ pub fn init(level: Option<&str>) {
     });
     info!("logging module initialized");
 }
+
 
 #[macro_export]
 macro_rules! print {
@@ -122,7 +137,7 @@ pub fn puts(buffer: &[u8]) {
     for i in buffer {
         match main_uart_inited {
             true => MAIN_UART.put(*i),
-            false => console_putchar(*i),
+            false => DebugConsole::putchar(*i),
         }
     }
 }
@@ -133,6 +148,6 @@ pub fn puts(buffer: &[u8]) {
 pub fn get_char() -> Option<u8> {
     match MAIN_UART.try_get() {
         Some(uart) => uart.get(),
-        None => console_getchar(),
+        None => DebugConsole::getchar(),
     }
 }
