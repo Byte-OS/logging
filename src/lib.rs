@@ -2,7 +2,8 @@
 
 extern crate alloc;
 
-use arch::debug::DebugConsole;
+use arch::{debug::DebugConsole, hart_id};
+use sync::Mutex;
 use core::fmt::{self, Write};
 use devices::MAIN_UART;
 use log::{self, info, Level, LevelFilter, Log, Metadata, Record};
@@ -18,6 +19,9 @@ impl Log for Logger {
         if !self.enabled(record.metadata()) {
             return;
         }
+
+        static BIG_MUTEX: Mutex<()> = Mutex::new(());
+        let _temp_global_lock = BIG_MUTEX.lock();
 
         let color_code = match record.level() {
             Level::Error => 31u8, // Red
@@ -48,10 +52,10 @@ impl Log for Logger {
         write!(
             Logger,
             "\u{1B}[{}m\
-            [{}] {}\
+            [Core {}] {}\
             \u{1B}[0m\n",
             color_code,
-            record.level(),
+            hart_id(),
             record.args()
         )
         .expect("can't write color string in logging module.");
