@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-use arch::{debug::DebugConsole, hart_id};
+use polyhal::{debug::DebugConsole, hart_id};
 use sync::Mutex;
 use core::fmt::{self, Write};
 use devices::MAIN_UART;
