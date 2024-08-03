@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-use polyhal::{debug::DebugConsole, hart_id};
+use polyhal::debug_console::DebugConsole;
 use sync::Mutex;
 use core::fmt::{self, Write};
 use devices::MAIN_UART;
@@ -52,10 +52,10 @@ impl Log for Logger {
         write!(
             Logger,
             "\u{1B}[{}m\
-            [Core {}] {}\
+            [{}] {}\
             \u{1B}[0m\n",
             color_code,
-            hart_id(),
+            record.level(),
             record.args()
         )
         .expect("can't write color string in logging module.");
